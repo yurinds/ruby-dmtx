@@ -122,6 +122,7 @@ static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
 
     dmtxEncodeSetProp(enc, DmtxPropMarginSize, safeMargin);
     dmtxEncodeSetProp(enc, DmtxPropModuleSize, safeModule);
+    dmtxEncodeSetProp(enc, DmtxPropFnc1, 43);
 
     /* Create barcode image */
     if (dmtxEncodeDataMatrix(enc, RSTRING_LEN(safeString),
