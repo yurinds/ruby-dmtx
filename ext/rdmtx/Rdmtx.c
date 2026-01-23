@@ -118,6 +118,7 @@ static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
         png_infop info_ptr;
         PngStringWriter writer;
         png_bytep *row_pointers = NULL;
+        int row_stride;
         int y;
 
         if (png_ptr == NULL) {
@@ -153,9 +154,10 @@ static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
 
         png_write_info(png_ptr, info_ptr);
 
+        row_stride = dmtxImageGetProp(enc->image, DmtxPropRowSizeBytes);
         row_pointers = ALLOC_N(png_bytep, height);
         for (y = 0; y < height; y++) {
-            row_pointers[y] = (png_bytep)(enc->image->pxl + (size_t)y * width * 3);
+            row_pointers[y] = (png_bytep)(enc->image->pxl + (size_t)y * row_stride);
         }
 
         png_write_image(png_ptr, row_pointers);
