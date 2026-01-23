@@ -26,6 +26,8 @@ Contact: r.goyet@gmail.com
 #include <dmtx.h>
 #include <png.h>
 
+VALUE cRdmtxImage;
+
 static VALUE rdmtx_init(VALUE self) {
     return self;
 }
@@ -171,8 +173,7 @@ static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
 }
 
 VALUE cRdmtx;
-VALUE cRdmtxImage;
-void Init_Rdmtx() {
+void Init_Rdmtx(void) {
     cRdmtx = rb_define_class("Rdmtx", rb_cObject);
     rb_define_method(cRdmtx, "initialize", rdmtx_init, 0);
     rb_define_method(cRdmtx, "encode", rdmtx_encode, -1);
