@@ -3,3 +3,4 @@ Makefile
 *.so
 *.gem
 *.png
+mkmf.log
