@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'Rdmtx'
-  s.version     = '0.4.1'
-  s.date        = '2020-10-01'
+  s.version     = '0.5.0'
+  s.date        = '2025-01-01'
   s.summary     = 'Ruby libdmtx wrapper'
 
   s.description = 'This is a ruby wrapper for libdmtx, which is a open source software for reading and writing Data Matrix barcodes.'
@@ -13,6 +13,6 @@ Gem::Specification.new do |s|
   s.files       = Dir.glob('ext/**/*.{c,h,rb}')
   s.extensions  = ['ext/rdmtx/extconf.rb']
 
-  s.add_runtime_dependency 'rmagick', '~> 4'
   s.requirements << 'libdmtx'
+  s.requirements << 'libpng'
 end

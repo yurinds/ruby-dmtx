@@ -24,68 +24,43 @@ Contact: r.goyet@gmail.com
 
 #include <ruby.h>
 #include <dmtx.h>
+#include <png.h>
 
 static VALUE rdmtx_init(VALUE self) {
     return self;
 }
 
-static VALUE rdmtx_decode(VALUE self, VALUE image /* Image from RMagick (Magick::Image) */, VALUE timeout /* Timeout in msec */) {
+typedef struct {
+    VALUE str;
+} PngStringWriter;
 
-    VALUE rawImageString = rb_funcall(image, rb_intern("export_pixels_to_str"), 0);
+static void png_write_callback(png_structp png_ptr, png_bytep data, png_size_t length) {
+    PngStringWriter *writer = (PngStringWriter *)png_get_io_ptr(png_ptr);
+    rb_str_cat(writer->str, (const char *)data, length);
+}
 
-    VALUE safeImageString = StringValue(rawImageString);
+static VALUE rdmtx_image_init(VALUE self, VALUE data) {
+    rb_iv_set(self, "@data", data);
+    return self;
+}
 
-    char * imageBuffer = RSTRING_PTR(safeImageString);
+static VALUE rdmtx_image_write(VALUE self, VALUE path) {
+    VALUE data = rb_iv_get(self, "@data");
+    VALUE file_class = rb_const_get(rb_cObject, rb_intern("File"));
+    rb_funcall(file_class, rb_intern("binwrite"), 2, path, data);
+    return path;
+}
 
-    int width = NUM2INT(rb_funcall(image, rb_intern("columns"), 0));
-    int height = NUM2INT(rb_funcall(image, rb_intern("rows"), 0));
-
-    DmtxImage *dmtxImage = dmtxImageCreate((unsigned char *)imageBuffer, width,
-          height, DmtxPack24bppRGB);
-
-    VALUE results = rb_ary_new();
-
-    /* Initialize decode struct for newly loaded image */
-    DmtxDecode * decode = dmtxDecodeCreate(dmtxImage, 1);
-
-    DmtxRegion * region;
-    DmtxMessage * message;
-
-    int intTimeout = NUM2INT(timeout);
-    DmtxTime dmtxTimeout = dmtxTimeAdd(dmtxTimeNow(), intTimeout);
-
-    for(;;) {
-        if (intTimeout == 0) {
-            region = dmtxRegionFindNext(decode, NULL);
-        } else {
-            region = dmtxRegionFindNext(decode, &dmtxTimeout);
-        }
-
-        if (region == NULL )
-            break;
-
-        message = dmtxDecodeMatrixRegion(decode, region, DmtxUndefined);
-        if (message != NULL) {
-            VALUE outputString = rb_str_new2((char *)message->output);
-            rb_ary_push(results, outputString);
-            dmtxMessageDestroy(&message);
-        }
-
-        dmtxRegionDestroy(&region);
-    }
-
-    dmtxDecodeDestroy(&decode);
-    dmtxImageDestroy(&dmtxImage);
-
-    return results;
+static VALUE rdmtx_image_data(VALUE self) {
+    return rb_iv_get(self, "@data");
 }
 
 static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
 
     VALUE string, margin, module, size;
     VALUE safeString;
-    VALUE magickImageClass;
     VALUE outputImage;
+    VALUE pngString;
 
     int safeMargin, safeModule, safeSize;
     int width;
@@ -135,31 +110,77 @@ static VALUE rdmtx_encode(int argc, VALUE * argv, VALUE self) {
     width = dmtxImageGetProp(enc->image, DmtxPropWidth);
     height = dmtxImageGetProp(enc->image, DmtxPropHeight);
 
-    magickImageClass = rb_path2class("Magick::Image");
-    outputImage = rb_funcall(magickImageClass, rb_intern("new"), 2, INT2NUM(width), INT2NUM(height));
+    pngString = rb_str_new("", 0);
+    {
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr;
+        PngStringWriter writer;
+        png_bytep *row_pointers = NULL;
+        int y;
 
-    rb_funcall(outputImage, rb_intern("import_pixels"), 7,
-               INT2NUM(0),
-               INT2NUM(0),
-               INT2NUM(width),
-               INT2NUM(height),
-               rb_str_new("RGB", 3),
-               rb_str_new((char *)enc->image->pxl, 3*width*height),
-//               rb_const_get("Magick" ,rb_intern("CharPixel"))
-               rb_eval_string("Magick::CharPixel"));
+        if (png_ptr == NULL) {
+            dmtxEncodeDestroy(&enc);
+            return Qnil;
+        }
+
+        info_ptr = png_create_info_struct(png_ptr);
+        if (info_ptr == NULL) {
+            png_destroy_write_struct(&png_ptr, NULL);
+            dmtxEncodeDestroy(&enc);
+            return Qnil;
+        }
+
+        if (setjmp(png_jmpbuf(png_ptr))) {
+            if (row_pointers != NULL) {
+                xfree(row_pointers);
+            }
+            png_destroy_write_struct(&png_ptr, &info_ptr);
+            dmtxEncodeDestroy(&enc);
+            return Qnil;
+        }
+
+        writer.str = pngString;
+        png_set_write_fn(png_ptr, &writer, png_write_callback, NULL);
+
+        png_set_IHDR(png_ptr, info_ptr,
+                     width, height,
+                     8, PNG_COLOR_TYPE_RGB,
+                     PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_DEFAULT,
+                     PNG_FILTER_TYPE_DEFAULT);
+
+        png_write_info(png_ptr, info_ptr);
+
+        row_pointers = ALLOC_N(png_bytep, height);
+        for (y = 0; y < height; y++) {
+            row_pointers[y] = (png_bytep)(enc->image->pxl + (size_t)y * width * 3);
+        }
+
+        png_write_image(png_ptr, row_pointers);
+        png_write_end(png_ptr, NULL);
+
+        xfree(row_pointers);
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+    }
 
     /* Clean up */
     dmtxEncodeDestroy(&enc);
 
+    outputImage = rb_class_new_instance(1, &pngString, cRdmtxImage);
     return outputImage;
 }
 
 VALUE cRdmtx;
+VALUE cRdmtxImage;
 void Init_Rdmtx() {
     cRdmtx = rb_define_class("Rdmtx", rb_cObject);
     rb_define_method(cRdmtx, "initialize", rdmtx_init, 0);
-    rb_define_method(cRdmtx, "decode", rdmtx_decode, 2);
     rb_define_method(cRdmtx, "encode", rdmtx_encode, -1);
+
+    cRdmtxImage = rb_define_class_under(cRdmtx, "Image", rb_cObject);
+    rb_define_method(cRdmtxImage, "initialize", rdmtx_image_init, 1);
+    rb_define_method(cRdmtxImage, "write", rdmtx_image_write, 1);
+    rb_define_method(cRdmtxImage, "data", rdmtx_image_data, 0);
 
     rb_define_global_const("DmtxSymbolRectAuto", INT2FIX(DmtxSymbolRectAuto));
     rb_define_global_const("DmtxSymbolSquareAuto", INT2FIX(DmtxSymbolSquareAuto));

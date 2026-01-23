@@ -13,18 +13,15 @@ Dependencies
 ============
 
 * libdmtx
-* rmagick
+* libpng
 
 Example
 =======
 
-    require 'rmagick'
     require 'Rdmtx'
     rdmtx = Rdmtx.new
     i = rdmtx.encode("Hello you !!", 5, 5)
     i.write("output.png")
-
-See test.rb for a decode example.
 
 API
 ===
@@ -37,7 +34,7 @@ API
 
     rdmtx.encode(String, MarginSize, ModuleSize, SizeRequest)
 
-Creates and returns an rmagick image object by encoding `String` with
+Creates and returns an `Rdmtx::Image` object by encoding `String` with
 (optional arguments) margin `MarginSize`, module `ModuleSize`, and
 request a particular size of the output `SizeRequest`.
 
@@ -48,11 +45,6 @@ request a particular size of the output `SizeRequest`.
   See [`ext/rdmtx/Rdmtx.c`](ext/rdmtx/Rdmtx.c) for a full listing of the
   possible values.
 
-### Decoding
-
-    rdmtx.decode(Image, Timeout)
-
-Decodes the rmagick image object `Image` within `Timeout`.
 
 
 Development Environment
@@ -65,7 +57,7 @@ sudo apt install software-properties-common
 sudo apt-add-repository -y ppa:rael-gc/rvm
 sudo apt update
 sudo apt install rvm
-sudo apt install libmagickwand-dev libdmtx-dev
+sudo apt install libpng-dev libdmtx-dev
 rvm install 2.7
 ```
 
