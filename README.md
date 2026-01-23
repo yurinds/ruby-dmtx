@@ -4,6 +4,8 @@ https://github.com/dmtx/dmtx-wrappers
 
 The original README file is renamed as libdmtx-README.
 
+[![CI](https://github.com/yurinds/ruby-dmtx/actions/workflows/ci.yml/badge.svg)](https://github.com/yurinds/ruby-dmtx/actions/workflows/ci.yml)
+
 Installation
 ============
 
@@ -12,8 +14,29 @@ Installation
 Dependencies
 ============
 
-* libdmtx
-* libpng
+Runtime system libraries:
+
+* libdmtx (Data Matrix encoding)
+* libpng (PNG writer for fast image output)
+
+No ImageMagick/RMagick is required.
+
+Alpine packages:
+
+```
+apk add --no-cache libdmtx libpng
+```
+
+Build dependencies (for native extension):
+
+* libdmtx-dev
+* libpng-dev
+
+Alpine build packages:
+
+```
+apk add --no-cache build-base libdmtx-dev libpng-dev
+```
 
 Example
 =======
@@ -47,6 +70,15 @@ request a particular size of the output `SizeRequest`.
 
 
 
+Differences from the original gem
+=================================
+
+* No RMagick/ImageMagick dependency.
+* Encoding returns `Rdmtx::Image` (wrapper over PNG bytes) with `.write(path)`.
+* Faster and lighter image generation: PNG is written directly from C via libpng.
+* `decode` has been removed in this fork.
+
+
 Development Environment
 =======================
 
@@ -69,12 +101,11 @@ gem build Rdmtx.gemspec
 
 ### Install and test local gem
 ```
-gem install ./Rdmtx-0.4.0.gem
+gem install ./Rdmtx-0.5.2.gem
 ./test.rb
-./test.rb output.png
 ```
 
 ### Upload to rubygems
 ```
-gem push Rdmtx-0.4.0.gem
+gem push Rdmtx-0.5.2.gem
 ```

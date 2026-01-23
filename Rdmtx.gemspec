@@ -10,9 +10,12 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/srijan/ruby-dmtx'
   s.license     = 'LGPL-2.1'
 
-  s.files       = Dir.glob('ext/**/*.{c,h,rb}')
+  s.files       = Dir.glob('ext/**/*.{c,h,rb}') + Dir.glob('test/**/*.rb') + ['README.md']
   s.extensions  = ['ext/rdmtx/extconf.rb']
 
   s.requirements << 'libdmtx'
   s.requirements << 'libpng'
+
+  s.add_development_dependency 'minitest', '>= 5'
+  s.add_development_dependency 'rake', '~> 13'
 end

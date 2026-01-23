@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libdmtx-dev libpng-dev
+      - name: Install Ruby dependencies
+        run: gem install rake minitest
+      - name: Build extension
+        run: |
+          ruby extconf.rb
+          make
+        working-directory: ext/rdmtx
+      - name: Run tests
+        run: rake test
