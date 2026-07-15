@@ -3,8 +3,20 @@ require_relative 'test_helper'
 class RdmtxTest < Minitest::Test
   include PngHelpers
 
+  FNC1_MATRIX = [
+    '1010101010',
+    '1010011001',
+    '1000001010',
+    '1010101111',
+    '1110110100',
+    '1011111001',
+    '1111011100',
+    '1011000011',
+    '1000000010',
+    '1111111111'
+  ].freeze
+
   def setup
-    skip 'Rdmtx extension not available' unless defined?(Rdmtx)
     @rdmtx = Rdmtx.new
   end
 
@@ -45,5 +57,11 @@ class RdmtxTest < Minitest::Test
     width_small, _height_small = png_dimensions(image_small.data)
     width_large, _height_large = png_dimensions(image_large.data)
     assert_operator width_large, :>, width_small
+  end
+
+  def test_fnc1_marker_is_encoded
+    image = @rdmtx.encode('#A', 0, 1, DmtxSymbol10x10)
+
+    assert_equal FNC1_MATRIX, png_matrix(image.data)
   end
 end

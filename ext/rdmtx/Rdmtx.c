@@ -30,6 +30,7 @@ Contact: r.goyet@gmail.com
 /* Constants */
 #define DEFAULT_MARGIN 5
 #define DEFAULT_MODULE 5
+#define FNC1_MARKER '#'
 #define MAX_MARGIN 1000
 #define MAX_MODULE 100
 #define MAX_IMAGE_DIMENSION 10000
@@ -184,7 +185,8 @@ static VALUE rdmtx_encode_body(VALUE arg) {
     if (dmtxEncodeSetProp(enc, DmtxPropPixelPacking, DmtxPack24bppRGB) == DmtxFail ||
         dmtxEncodeSetProp(enc, DmtxPropSizeRequest, safeSize) == DmtxFail ||
         dmtxEncodeSetProp(enc, DmtxPropMarginSize, safeMargin) == DmtxFail ||
-        dmtxEncodeSetProp(enc, DmtxPropModuleSize, safeModule) == DmtxFail) {
+        dmtxEncodeSetProp(enc, DmtxPropModuleSize, safeModule) == DmtxFail ||
+        dmtxEncodeSetProp(enc, DmtxPropFnc1, FNC1_MARKER) == DmtxFail) {
         rb_raise(rb_eRuntimeError, "Failed to configure dmtx encoder");
         return Qnil;
     }
